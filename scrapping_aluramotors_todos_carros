@@ -1,0 +1,60 @@
+from bs4 import BeautifulSoup
+from urllib.request import urlopen, urlretrieve
+import pandas as pd
+
+informacoes_listas = []
+
+
+
+url = 'http://alura-site-scraping.herokuapp.com/index.php'
+response = urlopen(url)
+html = response.read()
+html = html.decode('utf-8')
+soup = BeautifulSoup(html, 'html.parser')
+
+last_page = int(soup.find('span', attrs={'class': 'info-pages'}).get_text().split()[-1])
+for i in range(last_page):
+    
+    response = urlopen(f'http://alura-site-scraping.herokuapp.com/index.php?page={int(i + 1)}')
+    html = response.read()
+    html = html.decode('utf-8')
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    
+    
+    
+    
+    infos_max = soup.find('div', attrs={'id': 'container-cards'}).findAll('div', attrs={'class': 'well card'})
+    for geral in infos_max:
+        #dicionario geral
+        informacoes_dicionarios = {}
+        informacoes = geral.find('div', attrs={'class': 'body-card'}).findAll('p')
+
+        #pegar preços
+        valores = geral.find('p', attrs={'class', 'txt-value'}).getText()
+        informacoes_dicionarios['value'] = valores
+    
+        #pegar acessorios
+        items = geral.find('div', attrs={'class': 'body-card'}).ul.findAll('li')
+        items.pop()
+        acessorios = []
+        for item in items:
+            acessorios.append(item.get_text().replace('►', ''))
+        informacoes_dicionarios['appends'] = acessorios
+
+        #informacoes gerais dos carros
+        for info in informacoes:
+            informacoes_dicionarios[info.get('class')[0].split('-')[-1]] = info.get_text()
+
+        informacoes_listas.append(informacoes_dicionarios)
+
+        #pegar imagens
+        #imagem = geral.find('div', attrs={'class': 'image-card'}).img
+        #urlretrieve(imagem.get('src'), imagem.get('src').split('/')[-1])
+
+
+dataset = pd.DataFrame(informacoes_listas)
+dataset.to_csv('Web Scrapping alura', sep= ';', index= False, encoding= 'utf-8-sig')
+print(dataset)
+
+
